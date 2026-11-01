@@ -3,13 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Chaturbate Online Monitor</title>
 
 <style>
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   font-family: system-ui, sans-serif;
@@ -31,8 +28,7 @@ h1 {
   margin-bottom: 15px;
 }
 
-button,
-select {
+button, select {
   background: #ff69b4;
   color: white;
   border: none;
@@ -43,14 +39,8 @@ select {
   font-size: 14px;
 }
 
-button:hover {
-  background: #e84d9d;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: wait;
-}
+button:hover { background: #e84d9d; }
+button:disabled { opacity: 0.6; cursor: wait; }
 
 select {
   background: #222;
@@ -71,9 +61,7 @@ select {
   font-size: 14px;
 }
 
-.filter-row select {
-  margin: 0;
-}
+.filter-row select { margin: 0; }
 
 .stats {
   display: flex;
@@ -96,17 +84,9 @@ select {
   font-size: 22px;
 }
 
-.stat.online strong {
-  color: #00ff00;
-}
-
-.stat.offline strong {
-  color: #999;
-}
-
-.stat.errors strong {
-  color: orange;
-}
+.stat.online strong { color: #00ff00; }
+.stat.offline strong { color: #999; }
+.stat.errors strong { color: orange; }
 
 .model {
   display: flex;
@@ -126,21 +106,11 @@ select {
   overflow-wrap: anywhere;
 }
 
-.model a:hover {
-  color: #ff69b4;
-}
+.model a:hover { color: #ff69b4; }
 
-.online {
-  border-left: 5px solid #00ff00;
-}
-
-.offline {
-  border-left: 5px solid #555;
-}
-
-.error {
-  border-left: 5px solid orange;
-}
+.online { border-left: 5px solid #00ff00; }
+.offline { border-left: 5px solid #555; }
+.error { border-left: 5px solid orange; }
 
 .status {
   font-weight: bold;
@@ -149,16 +119,15 @@ select {
   overflow-wrap: anywhere;
 }
 
-.online .status {
-  color: #00ff00;
-}
+.online .status { color: #00ff00; }
+.offline .status { color: #888; }
+.error .status { color: orange; }
 
-.offline .status {
-  color: #888;
-}
-
-.error .status {
-  color: orange;
+.last-online {
+  display: block;
+  color: #999;
+  font-size: 11px;
+  margin-top: 3px;
 }
 
 #list {
@@ -184,18 +153,9 @@ select {
 }
 
 @media (max-width: 480px) {
-  body {
-    padding: 12px;
-  }
-
-  .model {
-    padding: 9px;
-    font-size: 13px;
-  }
-
-  .status {
-    min-width: 75px;
-  }
+  body { padding: 12px; }
+  .model { padding: 9px; font-size: 13px; }
+  .status { min-width: 75px; }
 }
 </style>
 </head>
@@ -209,38 +169,26 @@ select {
   wanneer een model online komt.
 </p>
 
-<button onclick="requestPermission()">
-  Notificaties toestaan
-</button>
-
-<button onclick="testSound()">
-  Test geluid
-</button>
-
-<button onclick="checkAll()" id="refreshButton">
-  Nu controleren
-</button>
+<button onclick="requestPermission()">Notificaties toestaan</button>
+<button onclick="testSound()">Test geluid</button>
+<button onclick="checkAll()" id="refreshButton">Nu controleren</button>
 
 <div class="stats">
   <div class="stat online">
     <strong id="onlineCount">0</strong>
     Online
   </div>
-
   <div class="stat offline">
     <strong id="offlineCount">0</strong>
     Offline
   </div>
-
   <div class="stat errors">
     <strong id="errorCount">0</strong>
     Fouten / onbekend
   </div>
 </div>
 
-<div id="lastCheck">
-  Nog niet gecontroleerd
-</div>
+<div id="lastCheck">Nog niet gecontroleerd</div>
 
 <div class="filter-row">
   <label for="sortFilter">Sorteren:</label>
@@ -248,6 +196,7 @@ select {
     <option value="online">Online bovenaan (alfabetisch)</option>
     <option value="alphabetical">Alles op alfabet</option>
     <option value="offline">Offline bovenaan (alfabetisch)</option>
+    <option value="lastOnline">Laatst online gegaan</option>
   </select>
 </div>
 
@@ -369,33 +318,58 @@ const MODELS = [
 ];
 
 // ============================================
-// VARIABELEN
+// OPSLAG IN DE BROWSER
 // ============================================
 
-const previousStatus = {};
+const LAST_ONLINE_KEY = "cbMonitorLastOnline_v1";
+const LAST_STATUS_KEY = "cbMonitorLastStatus_v1";
+
+function loadStorage(key) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "{}");
+    return value && typeof value === "object" && !Array.isArray(value)
+      ? value
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveStorage(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.warn("Opslaan in browser mislukt:", error);
+  }
+}
+
+const lastOnlineAt = loadStorage(LAST_ONLINE_KEY);
+const previousStatus = loadStorage(LAST_STATUS_KEY);
+
+// Verwijder opgeslagen gegevens van modellen die niet meer in de lijst staan.
+for (const name of Object.keys(lastOnlineAt)) {
+  if (!MODELS.includes(name)) delete lastOnlineAt[name];
+}
+
+for (const name of Object.keys(previousStatus)) {
+  if (!MODELS.includes(name)) delete previousStatus[name];
+}
+
+// ============================================
+// VARIABELEN
+// ============================================
 
 const listEl = document.getElementById("list");
 const logEl = document.getElementById("log");
 
 let isChecking = false;
 
-const ONLINE_STATUSES = [
-  "public",
-  "private",
-  "group",
-  "away"
-];
-
-const ERROR_STATUSES = [
-  "error",
-  "unknown",
-  "checking..."
-];
+const ONLINE_STATUSES = ["public", "private", "group", "away"];
+const ERROR_STATUSES = ["error", "unknown", "checking..."];
 
 // ============================================
 // SORTERING
-// Fouten en unknown blijven altijd bovenaan.
-// Binnen iedere groep wordt alfabetisch gesorteerd.
+// Fouten en unknown staan altijd bovenaan.
 // ============================================
 
 function compareNames(a, b) {
@@ -405,29 +379,26 @@ function compareNames(a, b) {
   });
 }
 
+function isErrorStatus(status) {
+  return ERROR_STATUSES.includes(status);
+}
+
 function getSortGroup(status, sortMode) {
-  // Fouten, unknown en nog niet gecontroleerde modellen
-  // staan altijd bovenaan, ongeacht de gekozen filter.
-  if (ERROR_STATUSES.includes(status)) {
-    return 0;
-  }
+  if (isErrorStatus(status)) return 0;
 
-  const isOnline = ONLINE_STATUSES.includes(status);
-  const isOffline = status === "offline";
-
-  if (sortMode === "alphabetical") {
-    return 1;
-  }
+  if (sortMode === "alphabetical") return 1;
 
   if (sortMode === "offline") {
-    if (isOffline) return 1;
-    if (isOnline) return 2;
+    if (status === "offline") return 1;
+    if (ONLINE_STATUSES.includes(status)) return 2;
     return 3;
   }
 
+  if (sortMode === "lastOnline") return 1;
+
   // Standaard: online bovenaan.
-  if (isOnline) return 1;
-  if (isOffline) return 2;
+  if (ONLINE_STATUSES.includes(status)) return 1;
+  if (status === "offline") return 2;
 
   return 3;
 }
@@ -446,8 +417,29 @@ function getSortedModels() {
       return groupA - groupB;
     }
 
+    // Sorteren op het tijdstip waarop ze voor het laatst online gingen.
+    if (sortMode === "lastOnline" && groupA !== 0) {
+      const timeA = Number(lastOnlineAt[a]) || 0;
+      const timeB = Number(lastOnlineAt[b]) || 0;
+
+      if (timeA !== timeB) {
+        return timeB - timeA;
+      }
+    }
+
     return compareNames(a, b);
   });
+}
+
+function formatLastOnline(name) {
+  const timestamp = Number(lastOnlineAt[name]) || 0;
+
+  if (!timestamp) {
+    return "Nog geen online-moment opgeslagen";
+  }
+
+  return "Laatst online gegaan: " +
+    new Date(timestamp).toLocaleString();
 }
 
 // ============================================
@@ -539,7 +531,7 @@ function render() {
   listEl.innerHTML = sortedModels.map(name => {
     const status = previousStatus[name] || "checking...";
     const isOnline = ONLINE_STATUSES.includes(status);
-    const isError = ERROR_STATUSES.includes(status);
+    const isError = isErrorStatus(status);
 
     if (isOnline) {
       online++;
@@ -564,6 +556,7 @@ function render() {
           <a href="${modelUrl}"
              target="_blank"
              rel="noopener noreferrer">${name}</a>
+          <span class="last-online">${formatLastOnline(name)}</span>
         </span>
         <span class="status">${status}</span>
       </div>
@@ -636,6 +629,8 @@ async function checkAll() {
       throw new Error(data.error || "Ongeldig antwoord van Netlify");
     }
 
+    const now = Date.now();
+
     for (const name of MODELS) {
       const status = data.statuses[name.toLowerCase()] || "unknown";
       const oldStatus = previousStatus[name];
@@ -643,7 +638,18 @@ async function checkAll() {
       const wasOnline = ONLINE_STATUSES.includes(oldStatus);
       const isOnline = ONLINE_STATUSES.includes(status);
 
-      // Melding bij nieuw online gaan, behalve bij eerste controle.
+      // Sla de eerste waarneming van een online model op als er
+      // nog geen tijdstip bestaat.
+      if (isOnline && !lastOnlineAt[name]) {
+        lastOnlineAt[name] = now;
+      }
+
+      // Werk het tijdstip bij wanneer een model opnieuw online komt.
+      if (isOnline && oldStatus !== undefined && !wasOnline) {
+        lastOnlineAt[name] = now;
+      }
+
+      // Meldingen bij nieuw online gaan, behalve bij de eerste controle.
       if (isOnline && !wasOnline && oldStatus !== undefined) {
         playBeep();
 
@@ -670,13 +676,28 @@ async function checkAll() {
         log(`${name} is offline gegaan`);
       }
 
-      // Bewaar de laatst bekende status bij tijdelijke fouten.
+      // Bewaar betrouwbare statussen, maar overschrijf ze niet
+      // met tijdelijke fouten of onbekende resultaten.
       if (status !== "error" && status !== "unknown") {
         previousStatus[name] = status;
       } else if (oldStatus === undefined) {
         previousStatus[name] = status;
       }
     }
+
+    saveStorage(LAST_ONLINE_KEY, lastOnlineAt);
+
+    const stableStatuses = {};
+
+    for (const name of MODELS) {
+      const status = previousStatus[name];
+
+      if (status && status !== "error" && status !== "unknown") {
+        stableStatuses[name] = status;
+      }
+    }
+
+    saveStorage(LAST_STATUS_KEY, stableStatuses);
 
     render();
 
