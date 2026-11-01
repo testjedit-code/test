@@ -16,31 +16,36 @@ exports.handler = async function(event) {
   }
 
   try {
-    const response = await fetch(
-      `https://chaturbate.com/api/chatvideocontext/${encodeURIComponent(username)}/`,
-      {
-        headers: {
-          "Accept": "application/json",
-          "User-Agent": "Mozilla/5.0",
-          "Referer": "https://chaturbate.com/"
-        },
-        signal: AbortSignal.timeout(10000)
-      }
-    );
+    // Test het alternatieve bio-endpoint
+    const url = `https://chaturbate.com/api/biocontext/${encodeURIComponent(username)}/`;
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
+        "Referer": "https://chaturbate.com/"
+      },
+      signal: AbortSignal.timeout(10000)
+    });
+
+    const body = await response.text();
+
+    console.log("Username:", username);
+    console.log("Chaturbate HTTP:", response.status);
+    console.log("Response:", body.substring(0, 500));
 
     if (!response.ok) {
-      console.error("Chaturbate HTTP:", response.status);
-
       return {
         statusCode: 502,
         headers,
         body: JSON.stringify({
-          error: "Chaturbate API returned HTTP " + response.status
+          error: "Chaturbate HTTP " + response.status,
+          upstream_status: response.status
         })
       };
     }
 
-    const data = await response.json();
+    const data = JSON.parse(body);
 
     return {
       statusCode: 200,
@@ -51,7 +56,7 @@ exports.handler = async function(event) {
     };
 
   } catch (err) {
-    console.error("Chaturbate error:", err);
+    console.error("Function error:", err);
 
     return {
       statusCode: 502,
