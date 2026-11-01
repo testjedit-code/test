@@ -1,3 +1,4 @@
+
 exports.handler = async function (event) {
   const wm = process.env.CB_WM_ID;
 
@@ -31,7 +32,12 @@ exports.handler = async function (event) {
     .map(name => name.trim().toLowerCase())
     .filter(Boolean);
 
-  if (requested.length === 0 || requested.length > 150) {
+  const uniqueRequested = [...new Set(requested)];
+
+  if (
+    uniqueRequested.length === 0 ||
+    uniqueRequested.length > 150
+  ) {
     return reply(400, {
       error: "Geef 1 tot 150 gebruikersnamen op via username of usernames."
     });
@@ -39,7 +45,7 @@ exports.handler = async function (event) {
 
   try {
     const statuses = Object.fromEntries(
-      requested.map(name => [name, "unknown"])
+      uniqueRequested.map(name => [name, "unknown"])
     );
 
     const found = new Set();
@@ -104,7 +110,7 @@ exports.handler = async function (event) {
       for (const room of data.results) {
         const name = String(room.username || "").toLowerCase();
 
-        if (!requested.includes(name)) {
+        if (!uniqueRequested.includes(name)) {
           continue;
         }
 
@@ -114,8 +120,12 @@ exports.handler = async function (event) {
           room.current_show || ""
         ).toLowerCase();
 
-        if (["public", "private", "group", "away"].includes(show)) {
+        if (
+          ["public", "private", "group", "away", "hidden"].includes(show)
+        ) {
           statuses[name] = show;
+        } else if (show === "cam_hidden") {
+          statuses[name] = "hidden";
         } else {
           statuses[name] = "unknown";
         }
@@ -128,16 +138,15 @@ exports.handler = async function (event) {
       }
 
       // Alle gevraagde modellen zijn gevonden.
-      if (found.size === requested.length) {
+      if (found.size === uniqueRequested.length) {
         complete = true;
         break;
       }
     }
 
-    // Alleen als de feed volledig is doorlopen, mogen niet-gevonden
-    // namen als offline worden weergegeven.
+    // Alleen na een volledige controle worden niet gevonden modellen offline.
     if (complete) {
-      for (const name of requested) {
+      for (const name of uniqueRequested) {
         if (!found.has(name)) {
           statuses[name] = "offline";
         }
@@ -149,15 +158,11 @@ exports.handler = async function (event) {
       statuses,
       complete
     });
-
   } catch (error) {
     return reply(502, {
       error: error.name === "TimeoutError"
         ? "Chaturbate API reageert te langzaam."
-        : (
-            error.message ||
-            "Onbekende fout bij de Chaturbate API."
-          )
+        : (error.message || "Onbekende fout bij de Chaturbate API.")
     });
   }
 };
