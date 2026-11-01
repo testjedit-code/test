@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Chaturbate Online Monitor</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #111; color: #eee; padding: 20px; max-width: 800px; margin: 0 auto; }
+  h1 { color: #ff69b4; margin-bottom: 5px; }
+  .model { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; margin: 4px 0; background: #222; border-radius: 6px; font-size: 14px; }
+  .online { border-left: 5px solid #0f0; }
+  .offline { border-left: 5px solid #555; }
+  .status { font-weight: bold; min-width: 90px; text-align: right; }
+  .online .status { color: #0f0; }
+  .offline .status { color: #888; }
+  button { background: #ff69b4; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; margin: 10px 8px 20px 0; }
+  #log { font-size: 13px; color: #aaa; margin-top: 20px; max-height: 180px; overflow-y: auto; }
+  #list { max-height: 520px; overflow-y: auto; }
+  .info { color: #888; font-size: 14px; margin-bottom: 15px; }
+</style>
+</head>
+<body>
+
+<h1>Chaturbate Monitor</h1>
+<p class="info">Houd deze tab open. Je krijgt een geluid + notificatie wanneer iemand online komt.</p>
+
+<button onclick="requestPermission()">Notificaties toestaan</button>
+<button onclick="testSound()">Test geluid</button>
+
+<div id="list"></div>
+<div id="log"></div>
+
+<script>
+// ============================================
+//  HIER STAAN ALLE NAMEN (enige plek)
+// ============================================
+const MODELS = [
+  "sensual_giaa",
+  "lastdawn",
+  "squikt",
+  "lana_kane_",
+  "ariana_valdirii",
+  "amylure",
+  "littlemia19",
+  "_bamby_baby_",
+  "yourkat",
+  "wizardkis",
+  "alison_miller9",
+  "milabunny_",
+  "mina_babe1",
+  "annaise_",
+  "badbitchcuteface",
+  "oliviaocean69",
+  "sophiesticate",
+  "marsabass",
+  "leah_greyy",
+  "emyii",
+  "juicy_jessye",
+  "eusebiaplageman",
+  "anyssyahoot",
+  "mandypeas",
+  "little_mixx",
+  "2badforyou",
+  "miss_jae",
+  "evelyn_jhonson3",
+  "hailey_madow",
+  "luvaprice",
+  "effieray",
+  "avroamy",
+  "chloewildd",
+  "zephirah_abney_",
+  "ellinrose",
+  "golden_alinee",
+  "dakota_blare",
+  "myliss",
+  "sophie_baley",
+  "katyerave",
+  "le_ah",
+  "erikabee",
+  "ellismeow",
+  "nixotica_",
+  "emmycb",
+  "sharlin_13",
+  "ginacali",
+  "ivytempt",
+  "nicdani_1",
+  "jully_lov",
+  "izzywild1",
+  "vonen_ray",
+  "creambaby1",
+  "chatur_babes_",
+  "lunnar_jade",
+  "iren_wagner",
+  "thaidream25",
+  "sexykiska",
+  "camilalovers01",
+  "diana_soft",
+  "black_cryystal",
+  "hi_miki",
+  "blissdilley",
+  "eves_bodyxxx",
+  "boobybliss",
+  "ohh_my_venus",
+  "svveetluna",
+  "therealfallingangel",
+  "okksanaocean",
+  "didiactive",
+  "glossybabe_",
+  "amywalker_",
+  "alexxiskye",
+  "cleopatra3101",
+  "assmerising",
+  "siennaruh",
+  "honeyyykate",
+  "aishabee",
+  "evva_foxxy",
+  "madelinefox_",
+  "stephie_martinez",
+  "a_anna",
+  "alicia_lang",
+  "artoftease",
+  "madison_littlee",
+  "sexxxsirens",
+  "alice_colt",
+  "oshun_25",
+  "caro_sanchezz",
+  "telladreamer_",
+  "themadisonshow",
+  "kari_brooks",
+  "gracieparker",
+  "madnessalise",
+  "heybanan",
+  "_hidden_gem_",
+  "honey_pinkgreen",
+  "playussoftly",
+  "cyanide_candys",
+  "sonya_kelsey",
+  "gisellee_",
+  "ana_beckett",
+  "babyallya",
+  "patiwhite"
+];
+
+// ============================================
+
+const previousStatus = {};
+const listEl = document.getElementById("list");
+const logEl = document.getElementById("log");
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playBeep() {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.frequency.value = 880;
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.8);
+}
+
+function testSound() {
+  playBeep();
+}
+
+function requestPermission() {
+  if (Notification.permission !== "granted") {
+    Notification.requestPermission();
+  }
+}
+
+function log(msg) {
+  const time = new Date().toLocaleTimeString();
+  logEl.innerHTML = `[${time}] ${msg}<br>` + logEl.innerHTML;
+}
+
+function render() {
+  listEl.innerHTML = MODELS.map(name => {
+    const status = previousStatus[name] || "checking...";
+    const isOnline = ["public", "private", "group", "away"].includes(status);
+    return `
+      <div class="model ${isOnline ? "online" : "offline"}">
+        <span><a href="https://chaturbate.com/${name}/" target="_blank" style="color:inherit">${name}</a></span>
+        <span class="status">${status}</span>
+      </div>`;
+  }).join("");
+}
+
+async function checkOne(username) {
+  try {
+    const res = await fetch(`/.netlify/functions/cb-status?username=${username}`);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    return data.room_status || "offline";
+  } catch (e) {
+    console.error(username, e);
+    return "error";
+  }
+}
+
+async function checkAll() {
+  // 1 voor 1 met kleine pauze
+  for (const name of MODELS) {
+    const status = await checkOne(name);
+
+    const wasOnline = ["public", "private", "group", "away"].includes(previousStatus[name]);
+    const isOnline = ["public", "private", "group", "away"].includes(status);
+
+    if (isOnline && !wasOnline && previousStatus[name] !== undefined) {
+      playBeep();
+      if (Notification.permission === "granted") {
+        new Notification(`${name} is ONLINE!`, {
+          body: `Status: ${status}`,
+          icon: "https://chaturbate.com/favicon.ico"
+        });
+      }
+      log(`🔔 ${name} is nu online (${status})`);
+    }
+
+    previousStatus[name] = status;
+    render();
+
+    // kleine pauze
+    await new Promise(r => setTimeout(r, 600));
+  }
+}
+
+// Start
+render();
+checkAll();
+setInterval(checkAll, 90 * 1000); // elke 90 seconden
+</script>
+</body>
+</html>
