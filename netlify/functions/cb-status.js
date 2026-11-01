@@ -2,78 +2,60 @@
 exports.handler = async function(event) {
   const username = event.queryStringParameters?.username;
 
+  const headers = {
+    "Content-Type": "application/json",
+    "Cache-Control": "no-store"
+  };
+
   if (!username || !/^[a-zA-Z0-9_]+$/.test(username)) {
     return {
       statusCode: 400,
+      headers,
       body: JSON.stringify({ error: "Invalid username" })
     };
   }
 
   try {
     const response = await fetch(
-      `https://chaturbate.com/api/biocontext/${encodeURIComponent(username)}/`,
+      `https://chaturbate.com/api/chatvideocontext/${encodeURIComponent(username)}/`,
       {
         headers: {
           "Accept": "application/json",
           "User-Agent": "Mozilla/5.0",
-          "Referer": `https://chaturbate.com/${username}/`
-        }
+          "Referer": "https://chaturbate.com/"
+        },
+        signal: AbortSignal.timeout(10000)
       }
     );
 
-    const body = await response.text();
-
     if (!response.ok) {
-      console.error("Chaturbate HTTP error:", username, response.status, body.slice(0, 300));
+      console.error("Chaturbate HTTP:", response.status);
 
       return {
         statusCode: 502,
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
-          error: "Chaturbate HTTP error",
-          upstreamStatus: response.status
+          error: "Chaturbate API returned HTTP " + response.status
         })
       };
     }
 
-    let data;
-
-    try {
-      data = JSON.parse(body);
-    } catch {
-      throw new Error("Chaturbate returned invalid JSON: " + body.slice(0, 200));
-    }
-
-    if (!data.room_status) {
-      console.error("Missing room_status:", username, data);
-
-      return {
-        statusCode: 502,
-        body: JSON.stringify({
-          error: "Missing room_status",
-          response: data
-        })
-      };
-    }
+    const data = await response.json();
 
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-store"
-      },
+      headers,
       body: JSON.stringify({
-        username,
-        room_status: data.room_status
+        room_status: data.room_status || "unknown"
       })
     };
 
   } catch (err) {
-    console.error("Function error:", username, err);
+    console.error("Chaturbate error:", err);
 
     return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json" },
+      statusCode: 502,
+      headers,
       body: JSON.stringify({
         error: err.message
       })
