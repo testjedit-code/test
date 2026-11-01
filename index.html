@@ -7,7 +7,9 @@
 <title>Chaturbate Online Monitor</title>
 
 <style>
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   font-family: system-ui, sans-serif;
@@ -18,10 +20,19 @@ body {
   margin: 0 auto;
 }
 
-h1 { color: #ff69b4; margin-bottom: 5px; }
-.info { color: #aaa; font-size: 14px; margin-bottom: 15px; }
+h1 {
+  color: #ff69b4;
+  margin-bottom: 5px;
+}
 
-button {
+.info {
+  color: #aaa;
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+button,
+select {
   background: #ff69b4;
   color: white;
   border: none;
@@ -32,8 +43,37 @@ button {
   font-size: 14px;
 }
 
-button:hover { background: #e84d9d; }
-button:disabled { opacity: .6; cursor: wait; }
+button:hover {
+  background: #e84d9d;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+select {
+  background: #222;
+  border: 1px solid #555;
+  max-width: 100%;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.filter-row label {
+  color: #ddd;
+  font-size: 14px;
+}
+
+.filter-row select {
+  margin: 0;
+}
 
 .stats {
   display: flex;
@@ -51,28 +91,56 @@ button:disabled { opacity: .6; cursor: wait; }
   text-align: center;
 }
 
-.stat strong { display: block; font-size: 22px; }
-.stat.online strong { color: #00ff00; }
-.stat.offline strong { color: #999; }
-.stat.errors strong { color: orange; }
+.stat strong {
+  display: block;
+  font-size: 22px;
+}
+
+.stat.online strong {
+  color: #00ff00;
+}
+
+.stat.offline strong {
+  color: #999;
+}
+
+.stat.errors strong {
+  color: orange;
+}
 
 .model {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
   padding: 10px 12px;
   margin: 4px 0;
   background: #222;
   border-radius: 6px;
   font-size: 14px;
-  gap: 12px;
 }
 
-.model a { color: inherit; text-decoration: none; }
-.model a:hover { color: #ff69b4; }
-.online { border-left: 5px solid #00ff00; }
-.offline { border-left: 5px solid #555; }
-.error { border-left: 5px solid orange; }
+.model a {
+  color: inherit;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.model a:hover {
+  color: #ff69b4;
+}
+
+.online {
+  border-left: 5px solid #00ff00;
+}
+
+.offline {
+  border-left: 5px solid #555;
+}
+
+.error {
+  border-left: 5px solid orange;
+}
 
 .status {
   font-weight: bold;
@@ -81,9 +149,17 @@ button:disabled { opacity: .6; cursor: wait; }
   overflow-wrap: anywhere;
 }
 
-.online .status { color: #00ff00; }
-.offline .status { color: #888; }
-.error .status { color: orange; }
+.online .status {
+  color: #00ff00;
+}
+
+.offline .status {
+  color: #888;
+}
+
+.error .status {
+  color: orange;
+}
 
 #list {
   max-height: 520px;
@@ -105,6 +181,21 @@ button:disabled { opacity: .6; cursor: wait; }
   color: #888;
   font-size: 12px;
   margin-bottom: 12px;
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 12px;
+  }
+
+  .model {
+    padding: 9px;
+    font-size: 13px;
+  }
+
+  .status {
+    min-width: 75px;
+  }
 }
 </style>
 </head>
@@ -143,11 +234,23 @@ button:disabled { opacity: .6; cursor: wait; }
 
   <div class="stat errors">
     <strong id="errorCount">0</strong>
-    Fouten
+    Fouten / onbekend
   </div>
 </div>
 
-<div id="lastCheck">Nog niet gecontroleerd</div>
+<div id="lastCheck">
+  Nog niet gecontroleerd
+</div>
+
+<div class="filter-row">
+  <label for="sortFilter">Sorteren:</label>
+  <select id="sortFilter" onchange="render()">
+    <option value="online">Online bovenaan (alfabetisch)</option>
+    <option value="alphabetical">Alles op alfabet</option>
+    <option value="offline">Offline bovenaan (alfabetisch)</option>
+  </select>
+</div>
+
 <div id="list"></div>
 
 <h3>Activiteiten</h3>
@@ -270,6 +373,7 @@ const MODELS = [
 // ============================================
 
 const previousStatus = {};
+
 const listEl = document.getElementById("list");
 const logEl = document.getElementById("log");
 
@@ -281,6 +385,70 @@ const ONLINE_STATUSES = [
   "group",
   "away"
 ];
+
+const ERROR_STATUSES = [
+  "error",
+  "unknown",
+  "checking..."
+];
+
+// ============================================
+// SORTERING
+// Fouten en unknown blijven altijd bovenaan.
+// Binnen iedere groep wordt alfabetisch gesorteerd.
+// ============================================
+
+function compareNames(a, b) {
+  return a.localeCompare(b, undefined, {
+    sensitivity: "base",
+    numeric: true
+  });
+}
+
+function getSortGroup(status, sortMode) {
+  // Fouten, unknown en nog niet gecontroleerde modellen
+  // staan altijd bovenaan, ongeacht de gekozen filter.
+  if (ERROR_STATUSES.includes(status)) {
+    return 0;
+  }
+
+  const isOnline = ONLINE_STATUSES.includes(status);
+  const isOffline = status === "offline";
+
+  if (sortMode === "alphabetical") {
+    return 1;
+  }
+
+  if (sortMode === "offline") {
+    if (isOffline) return 1;
+    if (isOnline) return 2;
+    return 3;
+  }
+
+  // Standaard: online bovenaan.
+  if (isOnline) return 1;
+  if (isOffline) return 2;
+
+  return 3;
+}
+
+function getSortedModels() {
+  const sortMode = document.getElementById("sortFilter").value;
+
+  return [...MODELS].sort((a, b) => {
+    const statusA = previousStatus[a] || "checking...";
+    const statusB = previousStatus[b] || "checking...";
+
+    const groupA = getSortGroup(statusA, sortMode);
+    const groupB = getSortGroup(statusB, sortMode);
+
+    if (groupA !== groupB) {
+      return groupA - groupB;
+    }
+
+    return compareNames(a, b);
+  });
+}
 
 // ============================================
 // GELUID
@@ -366,14 +534,12 @@ function render() {
   let offline = 0;
   let errors = 0;
 
-  listEl.innerHTML = MODELS.map(name => {
+  const sortedModels = getSortedModels();
+
+  listEl.innerHTML = sortedModels.map(name => {
     const status = previousStatus[name] || "checking...";
     const isOnline = ONLINE_STATUSES.includes(status);
-
-    const isError = [
-      "error",
-      "unknown"
-    ].includes(status);
+    const isError = ERROR_STATUSES.includes(status);
 
     if (isOnline) {
       online++;
@@ -389,10 +555,13 @@ function render() {
         ? "error"
         : "offline";
 
+    const modelUrl =
+      "https://chaturbate.com/" + encodeURIComponent(name) + "/";
+
     return `
       <div class="model ${cssClass}">
         <span>
-          <a href="https://chaturbate.com/${encodeURIComponent(name)}/"
+          <a href="${modelUrl}"
              target="_blank"
              rel="noopener noreferrer">${name}</a>
         </span>
@@ -425,7 +594,8 @@ async function checkOne(username) {
     }
 
     const status =
-      data.room_status || data.statuses?.[username.toLowerCase()];
+      data.room_status ||
+      data.statuses?.[username.toLowerCase()];
 
     if (ONLINE_STATUSES.includes(status)) return status;
     if (status === "offline") return "offline";
@@ -450,6 +620,7 @@ async function checkAll() {
   const button = document.getElementById("refreshButton");
   button.disabled = true;
   button.textContent = "Bezig met controleren...";
+
   log("Controle gestart...");
 
   try {
@@ -472,6 +643,7 @@ async function checkAll() {
       const wasOnline = ONLINE_STATUSES.includes(oldStatus);
       const isOnline = ONLINE_STATUSES.includes(status);
 
+      // Melding bij nieuw online gaan, behalve bij eerste controle.
       if (isOnline && !wasOnline && oldStatus !== undefined) {
         playBeep();
 
@@ -498,6 +670,7 @@ async function checkAll() {
         log(`${name} is offline gegaan`);
       }
 
+      // Bewaar de laatst bekende status bij tijdelijke fouten.
       if (status !== "error" && status !== "unknown") {
         previousStatus[name] = status;
       } else if (oldStatus === undefined) {
@@ -534,7 +707,6 @@ checkAll();
 
 // Iedere 90 seconden opnieuw controleren.
 setInterval(checkAll, 90 * 1000);
-
 </script>
 
 </body>
