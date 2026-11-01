@@ -102,9 +102,7 @@ exports.handler = async function (event) {
       }
 
       for (const room of data.results) {
-        const name = String(
-          room.username || ""
-        ).toLowerCase();
+        const name = String(room.username || "").toLowerCase();
 
         if (!requested.includes(name)) {
           continue;
@@ -116,9 +114,7 @@ exports.handler = async function (event) {
           room.current_show || ""
         ).toLowerCase();
 
-        if (
-          ["public", "private", "group", "away"].includes(show)
-        ) {
+        if (["public", "private", "group", "away"].includes(show)) {
           statuses[name] = show;
         } else {
           statuses[name] = "unknown";
@@ -131,15 +127,15 @@ exports.handler = async function (event) {
         break;
       }
 
-      // Alle gevraagde modellen gevonden.
+      // Alle gevraagde modellen zijn gevonden.
       if (found.size === requested.length) {
         complete = true;
         break;
       }
     }
 
-    // Alleen bij een volledige controle mogen ontbrekende modellen
-    // als offline worden aangemerkt.
+    // Alleen als de feed volledig is doorlopen, mogen niet-gevonden
+    // namen als offline worden weergegeven.
     if (complete) {
       for (const name of requested) {
         if (!found.has(name)) {
