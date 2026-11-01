@@ -1,238 +1,64 @@
+
 <!DOCTYPE html>
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chaturbate Online Monitor</title>
-
+<title>Chaturbate Monitor</title>
 <style>
-* {
-  box-sizing: border-box;
-}
-
-body {
-  font-family: system-ui, sans-serif;
-  background: #111;
-  color: #eee;
-  padding: 20px;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-h1 {
-  color: #ff69b4;
-  margin-bottom: 5px;
-}
-
-.info {
-  color: #aaa;
-  font-size: 14px;
-  margin-bottom: 15px;
-}
-
-button, select {
-  background: #ff69b4;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  margin: 10px 8px 15px 0;
-  font-size: 14px;
-}
-
-button:hover {
-  background: #e84d9d;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: wait;
-}
-
-select {
-  background: #222;
-  border: 1px solid #555;
-  max-width: 100%;
-}
-
-.filter-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 8px 0 12px;
-}
-
-.filter-row label {
-  color: #ddd;
-  font-size: 14px;
-}
-
-.filter-row select {
-  margin: 0;
-}
-
-.stats {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin: 10px 0 18px;
-}
-
-.stat {
-  background: #222;
-  padding: 12px;
-  border-radius: 8px;
-  flex: 1;
-  min-width: 100px;
-  text-align: center;
-}
-
-.stat strong {
-  display: block;
-  font-size: 22px;
-}
-
-.stat.online strong {
-  color: #00ff00;
-}
-
-.stat.offline strong {
-  color: #999;
-}
-
-.stat.errors strong {
-  color: orange;
-}
-
-.model {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  margin: 4px 0;
-  background: #222;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-.model a {
-  color: inherit;
-  text-decoration: none;
-  overflow-wrap: anywhere;
-}
-
-.model a:hover {
-  color: #ff69b4;
-}
-
-.online {
-  border-left: 5px solid #00ff00;
-}
-
-.offline {
-  border-left: 5px solid #555;
-}
-
-.error {
-  border-left: 5px solid orange;
-}
-
-.status {
-  font-weight: bold;
-  min-width: 90px;
-  text-align: right;
-  overflow-wrap: anywhere;
-}
-
-.status-public { color: #00ff00; }
-.status-private { color: #ff69b4; }
-.status-group { color: #bf80ff; }
-.status-away { color: #ffd54f; }
-.status-hidden { color: #4db8ff; }
-.status-offline { color: #888; }
-.status-error,
-.status-unknown,
-.status-checking { color: orange; }
-
-#list {
-  max-height: 520px;
-  overflow-y: auto;
-}
-
-#log {
-  font-size: 13px;
-  color: #aaa;
-  margin-top: 20px;
-  max-height: 180px;
-  overflow-y: auto;
-  background: #1a1a1a;
-  padding: 10px;
-  border-radius: 6px;
-}
-
-#lastCheck {
-  color: #888;
-  font-size: 12px;
-  margin-bottom: 12px;
-}
-
-@media (max-width: 480px) {
-  body {
-    padding: 12px;
-  }
-
-  .model {
-    padding: 9px;
-    font-size: 13px;
-  }
-
-  .status {
-    min-width: 75px;
-  }
-}
+*{box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:#111;color:#eee;padding:20px;max-width:900px;margin:auto}
+h1{color:#ff69b4}
+.info{color:#aaa;font-size:14px}
+button,select{background:#222;color:white;border:1px solid #555;padding:10px;border-radius:6px;cursor:pointer;margin:5px}
+button{background:#ff69b4;border:0}
+button:disabled{opacity:.6;cursor:wait}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:9px;margin:18px 0}
+.stat{background:#222;padding:12px 8px;border-radius:8px;text-align:center;border-top:4px solid #666}
+.stat strong{display:block;font-size:25px}
+.stat span{font-size:12px}
+.public{border-color:#00d65b}.private{border-color:#ff69b4}
+.group{border-color:#bf80ff}.away{border-color:#ffd54f}
+.hidden{border-color:#4db8ff}.offline{border-color:#777}
+.unknown{border-color:#ff9800}
+.filter-row{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:12px 0}
+.filter-row select{max-width:100%}
+.model{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px;margin:5px 0;background:#222;border-radius:6px;border-left:5px solid #777;font-size:14px}
+.model a{color:#eee;text-decoration:none;overflow-wrap:anywhere}
+.model a:hover{color:#ff69b4}
+.model.online{border-left-color:#00d65b}
+.model.error{border-left-color:orange}
+.status{font-weight:bold;text-align:right}
+.status-public{color:#00d65b}
+.status-private{color:#ff69b4}
+.status-group{color:#bf80ff}
+.status-away{color:#ffd54f}
+.status-hidden{color:#4db8ff}
+.status-offline{color:#999}
+.status-unknown,.status-error,.status-checking{color:orange}
+#list{max-height:520px;overflow-y:auto}
+#log{font-size:13px;color:#aaa;margin-top:15px;max-height:180px;overflow-y:auto;background:#1a1a1a;padding:10px;border-radius:6px}
+#lastCheck{font-size:12px;color:#888}
+@media(max-width:480px){body{padding:12px}.model{font-size:13px;padding:9px}}
 </style>
 </head>
-
 <body>
 
 <h1>Chaturbate Monitor</h1>
+<p class="info">Statuscontrole elke minuut. Geluid en melding alleen wanneer een model terugkeert naar Openbaar.</p>
 
-<p class="info">
-  Houd deze tab open. De statussen worden elke minuut gecontroleerd.
-  Je krijgt alleen een geluid en melding wanneer een model terugkeert
-  naar public.
-</p>
-
-<button onclick="requestPermission()">
-  Notificaties toestaan
-</button>
-
-<button onclick="testSound()">
-  Test geluid
-</button>
-
-<button onclick="checkAll()" id="refreshButton">
-  Nu controleren
-</button>
+<button onclick="requestPermission()">Notificaties toestaan</button>
+<button onclick="testSound()">Test geluid</button>
+<button onclick="checkAll()" id="refreshButton">Nu controleren</button>
 
 <div class="stats">
-  <div class="stat online">
-    <strong id="onlineCount">0</strong>
-    Online
-  </div>
-
-  <div class="stat offline">
-    <strong id="offlineCount">0</strong>
-    Offline
-  </div>
-
-  <div class="stat errors">
-    <strong id="errorCount">0</strong>
-    Fouten / onbekend
-  </div>
+  <div class="stat public"><strong id="publicCount">0</strong><span>Openbaar</span></div>
+  <div class="stat private"><strong id="privateCount">0</strong><span>Privéshow</span></div>
+  <div class="stat group"><strong id="groupCount">0</strong><span>Groepsshow</span></div>
+  <div class="stat away"><strong id="awayCount">0</strong><span>Afwezig</span></div>
+  <div class="stat hidden"><strong id="hiddenCount">0</strong><span>Cam hidden</span></div>
+  <div class="stat offline"><strong id="offlineCount">0</strong><span>Offline</span></div>
+  <div class="stat unknown"><strong id="unknownCount">0</strong><span>Onbekend / fout</span></div>
 </div>
 
 <div id="lastCheck">Nog niet gecontroleerd</div>
@@ -247,238 +73,102 @@ select {
 </div>
 
 <div id="list"></div>
-
 <h3>Activiteiten</h3>
 <div id="log"></div>
 
 <script>
-// ============================================
-// MODELLENLIJST
-// ============================================
-
 const MODELS = [
-  "sensual_giaa",
-  "lastdawn",
-  "squikt",
-  "lana_kane_",
-  "ariana_valdirii",
-  "amylure",
-  "littlemia19",
-  "_bamby_baby_",
-  "yourkat",
-  "wizardkis",
-  "alison_miller9",
-  "milabunny_",
-  "mina_babe1",
-  "annaise_",
-  "badbitchcuteface",
-  "oliviaocean69",
-  "sophiesticate",
-  "marsabass",
-  "leah_greyy",
-  "emyii",
-  "juicy_jessye",
-  "eusebiaplageman",
-  "anyssyahoot",
-  "mandypeas",
-  "little_mixx",
-  "2badforyou",
-  "miss_jae",
-  "evelyn_jhonson3",
-  "hailey_madow",
-  "luvaprice",
-  "effieray",
-  "avroamy",
-  "chloewildd",
-  "zephirah_abney_",
-  "ellinrose",
-  "golden_alinee",
-  "dakota_blare",
-  "myliss",
-  "sophie_baley",
-  "katyerave",
-  "le_ah",
-  "erikabee",
-  "ellismeow",
-  "nixotica_",
-  "emmycb",
-  "sharlin_13",
-  "ginacali",
-  "ivytempt",
-  "nicdani_1",
-  "jully_lov",
-  "izzywild1",
-  "vonen_ray",
-  "creambaby1",
-  "chatur_babes_",
-  "lunnar_jade",
-  "iren_wagner",
-  "thaidream25",
-  "sexykiska",
-  "camilalovers01",
-  "diana_soft",
-  "black_cryystal",
-  "hi_miki",
-  "blissdilley",
-  "eves_bodyxxx",
-  "boobybliss",
-  "ohh_my_venus",
-  "svveetluna",
-  "therealfallingangel",
-  "okksanaocean",
-  "didiactive",
-  "glossybabe_",
-  "amywalker_",
-  "alexxiskye",
-  "cleopatra3101",
-  "assmerising",
-  "siennaruh",
-  "honeyyykate",
-  "aishabee",
-  "evva_foxxy",
-  "madelinefox_",
-  "stephie_martinez",
-  "a_anna",
-  "alicia_lang",
-  "artoftease",
-  "madison_littlee",
-  "sexxxsirens",
-  "alice_colt",
-  "oshun_25",
-  "caro_sanchezz",
-  "telladreamer_",
-  "themadisonshow",
-  "kari_brooks",
-  "gracieparker",
-  "madnessalise",
-  "heybanan",
-  "_hidden_gem_",
-  "honey_pinkgreen",
-  "playussoftly",
-  "cyanide_candys",
-  "sonya_kelsey",
-  "gisellee_",
-  "ana_beckett",
-  "babyallya",
-  "pattiwhite"
+"sensual_giaa","lastdawn","squikt","lana_kane_","ariana_valdirii",
+"amylure","littlemia19","_bamby_baby_","yourkat","wizardkis",
+"alison_miller9","milabunny_","mina_babe1","annaise_",
+"badbitchcuteface","oliviaocean69","sophiesticate","marsabass",
+"leah_greyy","emyii","juicy_jessye","eusebiaplageman",
+"anyssyahoot","mandypeas","little_mixx","2badforyou","miss_jae",
+"evelyn_jhonson3","hailey_madow","luvaprice","effieray","avroamy",
+"chloewildd","zephirah_abney_","ellinrose","golden_alinee",
+"dakota_blare","myliss","sophie_baley","katyerave","le_ah",
+"erikabee","ellismeow","nixotica_","emmycb","sharlin_13",
+"ginacali","ivytempt","nicdani_1","jully_lov","izzywild1",
+"vonen_ray","creambaby1","chatur_babes_","lunnar_jade",
+"iren_wagner","thaidream25","sexykiska","camilalovers01",
+"diana_soft","black_cryystal","hi_miki","blissdilley",
+"eves_bodyxxx","boobybliss","ohh_my_venus","svveetluna",
+"therealfallingangel","okksanaocean","didiactive","glossybabe_",
+"amywalker_","alexxiskye","cleopatra3101","assmerising","siennaruh",
+"honeyyykate","aishabee","evva_foxxy","madelinefox_",
+"stephie_martinez","a_anna","alicia_lang","artoftease",
+"madison_littlee","sexxxsirens","alice_colt","oshun_25",
+"caro_sanchezz","telladreamer_","themadisonshow","kari_brooks",
+"gracieparker","madnessalise","heybanan","_hidden_gem_",
+"honey_pinkgreen","playussoftly","cyanide_candys","sonya_kelsey",
+"gisellee_","ana_beckett","babyallya","pattiwhite"
 ];
-
-// ============================================
-// VARIABELEN EN STATUSLABELS
-// ============================================
 
 const previousStatus = {};
-
 const listEl = document.getElementById("list");
 const logEl = document.getElementById("log");
-
 let isChecking = false;
 
-const ONLINE_STATUSES = [
-  "public",
-  "private",
-  "group",
-  "away",
-  "hidden"
-];
-
-const ERROR_STATUSES = [
-  "error",
-  "unknown",
-  "checking..."
-];
-
 const STATUS_LABELS = {
-  public: "Openbaar",
-  private: "Privéshow",
-  group: "Groepsshow",
-  away: "Afwezig",
-  hidden: "Cam hidden",
-  offline: "Offline",
-  error: "Fout",
-  unknown: "Onbekend",
-  "checking...": "Controleren..."
+  public:"Openbaar",
+  private:"Privéshow",
+  group:"Groepsshow",
+  away:"Afwezig",
+  hidden:"Cam hidden",
+  offline:"Offline",
+  error:"Fout",
+  unknown:"Onbekend",
+  "checking...":"Controleren..."
 };
+
+const ONLINE_STATUSES = ["public","private","group","away","hidden"];
 
 function getStatusLabel(status) {
   return STATUS_LABELS[status] || status;
 }
 
 function getStatusClass(status) {
-  return "status-" + String(status)
-    .toLowerCase()
-    .replace(/[^a-z-]/g, "");
+  return "status-" + status.replace(/[^a-z-]/g,"");
 }
 
-// ============================================
-// SORTERING
-// ============================================
-
-function compareNames(a, b) {
-  return a.localeCompare(b, undefined, {
-    sensitivity: "base",
-    numeric: true
-  });
-}
-
-function getSortGroup(status, sortMode) {
-  if (ERROR_STATUSES.includes(status)) {
-    return 0;
-  }
-
-  const isOnline = ONLINE_STATUSES.includes(status);
-  const isOffline = status === "offline";
-
-  if (sortMode === "alphabetical") {
-    return 1;
-  }
-
-  if (sortMode === "offline") {
-    if (isOffline) return 1;
-    if (isOnline) return 2;
-    return 3;
-  }
-
-  if (isOnline) return 1;
-  if (isOffline) return 2;
-
-  return 3;
+function compareNames(a,b) {
+  return a.localeCompare(b,undefined,{sensitivity:"base"});
 }
 
 function getSortedModels() {
-  const sortMode =
-    document.getElementById("sortFilter").value;
+  const mode = document.getElementById("sortFilter").value;
 
-  return [...MODELS].sort((a, b) => {
-    const statusA = previousStatus[a] || "checking...";
-    const statusB = previousStatus[b] || "checking...";
+  return [...MODELS].sort((a,b) => {
+    const sa = previousStatus[a] || "checking...";
+    const sb = previousStatus[b] || "checking...";
 
-    const groupA = getSortGroup(statusA, sortMode);
-    const groupB = getSortGroup(statusB, sortMode);
-
-    if (groupA !== groupB) {
-      return groupA - groupB;
+    if (mode === "alphabetical") {
+      return compareNames(a,b);
     }
 
-    return compareNames(a, b);
+    const rank = status => {
+      if (mode === "offline") {
+        if (status === "offline") return 0;
+        if (ONLINE_STATUSES.includes(status)) return 1;
+        return 2;
+      }
+
+      if (ONLINE_STATUSES.includes(status)) return 0;
+      if (status === "offline") return 1;
+      return 2;
+    };
+
+    return rank(sa)-rank(sb) || compareNames(a,b);
   });
 }
-
-// ============================================
-// GELUID
-// ============================================
 
 let audioCtx;
 
 function playBeep() {
   try {
-    audioCtx = audioCtx ||
-      new (window.AudioContext ||
-           window.webkitAudioContext)();
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
 
-    if (audioCtx.state === "suspended") {
-      audioCtx.resume();
-    }
+    if (audioCtx.state === "suspended") audioCtx.resume();
 
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -487,21 +177,13 @@ function playBeep() {
     gain.connect(audioCtx.destination);
 
     osc.frequency.value = 880;
-
-    gain.gain.setValueAtTime(
-      0.3,
-      audioCtx.currentTime
-    );
-
-    gain.gain.exponentialRampToValueAtTime(
-      0.01,
-      audioCtx.currentTime + 0.8
-    );
+    gain.gain.setValueAtTime(0.3,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.8);
 
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.8);
-  } catch (error) {
-    console.error("Audio error:", error);
+    osc.stop(audioCtx.currentTime+0.8);
+  } catch (e) {
+    console.error("Audiofout:",e);
   }
 }
 
@@ -509,35 +191,21 @@ function testSound() {
   playBeep();
 }
 
-// ============================================
-// NOTIFICATIES
-// ============================================
-
 async function requestPermission() {
   if (!("Notification" in window)) {
     alert("Je browser ondersteunt geen notificaties.");
     return;
   }
 
-  const permission =
-    await Notification.requestPermission();
-
-  if (permission === "granted") {
-    alert("Notificaties zijn ingeschakeld!");
-  } else {
-    alert("Notificaties zijn niet toegestaan.");
-  }
+  const permission = await Notification.requestPermission();
+  alert(permission === "granted"
+    ? "Notificaties zijn ingeschakeld."
+    : "Notificaties zijn niet toegestaan.");
 }
 
-// ============================================
-// ACTIVITEITENLOG
-// ============================================
-
 function log(message) {
-  const time = new Date().toLocaleTimeString();
   const entry = document.createElement("div");
-
-  entry.textContent = `[${time}] ${message}`;
+  entry.textContent = "[" + new Date().toLocaleTimeString() + "] " + message;
   logEl.prepend(entry);
 
   while (logEl.children.length > 100) {
@@ -545,119 +213,79 @@ function log(message) {
   }
 }
 
-// ============================================
-// STATUS WEERGEVEN
-// ============================================
-
 function render() {
-  let online = 0;
-  let offline = 0;
-  let errors = 0;
+  const counts = {
+    public:0,
+    private:0,
+    group:0,
+    away:0,
+    hidden:0,
+    offline:0,
+    unknown:0
+  };
 
-  const sortedModels = getSortedModels();
+  listEl.innerHTML = getSortedModels().map(name => {
+    const status = previousStatus[name] || "checking...";
 
-  listEl.innerHTML = sortedModels.map(name => {
-    const status =
-      previousStatus[name] || "checking...";
-
-    const isOnline =
-      ONLINE_STATUSES.includes(status);
-
-    const isError =
-      ERROR_STATUSES.includes(status);
-
-    if (isOnline) {
-      online++;
-    } else if (isError) {
-      errors++;
-    } else if (status === "offline") {
-      offline++;
+    if (Object.hasOwn(counts,status)) {
+      counts[status]++;
+    } else {
+      counts.unknown++;
     }
 
-    const cssClass = isOnline
-      ? "online"
-      : isError
-        ? "error"
-        : "offline";
+    const online = ONLINE_STATUSES.includes(status);
+    const hasError = ["error","unknown","checking..."].includes(status);
+    const rowClass = online ? "online" : hasError ? "error" : "offline";
 
-    const modelUrl =
-      "https://chaturbate.com/" +
-      encodeURIComponent(name) + "/";
-
-    const statusLabel = getStatusLabel(status);
-    const statusClass = getStatusClass(status);
+    const url = "https://chaturbate.com/" + encodeURIComponent(name) + "/";
 
     return `
-      <div class="model ${cssClass}">
-        <span>
-          <a href="${modelUrl}"
-             target="_blank"
-             rel="noopener noreferrer">${name}</a>
-        </span>
-        <span class="status ${statusClass}">
-          ${statusLabel}
-        </span>
+      <div class="model ${rowClass}">
+        <span><a href="${url}" target="_blank" rel="noopener noreferrer">${name}</a></span>
+        <span class="status ${getStatusClass(status)}">${getStatusLabel(status)}</span>
       </div>
     `;
   }).join("");
 
-  document.getElementById("onlineCount").textContent =
-    online;
+  for (const status of Object.keys(counts)) {
+    const element = document.getElementById(status + "Count");
+    if (element) element.textContent = counts[status];
+  }
 
-  document.getElementById("offlineCount").textContent =
-    offline;
-
-  document.getElementById("errorCount").textContent =
-    errors;
+  document.getElementById("unknownCount").textContent =
+    counts.unknown + (counts.error || 0);
 }
-
-// ============================================
-// ALLE MODELLEN CONTROLEREN
-// ============================================
 
 async function checkAll() {
   if (isChecking) return;
 
   isChecking = true;
 
-  const button =
-    document.getElementById("refreshButton");
-
+  const button = document.getElementById("refreshButton");
   button.disabled = true;
-  button.textContent = "Bezig met controleren...";
-
-  log("Controle gestart...");
+  button.textContent = "Bezig...";
 
   try {
     const response = await fetch(
       "/.netlify/functions/cb-status?usernames=" +
       encodeURIComponent(MODELS.join(",")),
-      { cache: "no-store" }
+      {cache:"no-store"}
     );
 
     const data = await response.json();
 
     if (!response.ok || !data.statuses) {
-      throw new Error(
-        data.error || "Ongeldig antwoord van Netlify"
-      );
+      throw new Error(data.error || "Ongeldig antwoord van Netlify");
     }
 
     for (const name of MODELS) {
-      const status =
-        data.statuses[name.toLowerCase()] || "unknown";
-
+      const status = data.statuses[name.toLowerCase()] || "unknown";
       const oldStatus = previousStatus[name];
 
-      const wasOnline =
-        ONLINE_STATUSES.includes(oldStatus);
-
-      // Geluid alleen bij overgang naar public.
-      // Geen geluid bij de eerste controle.
       if (
         status === "public" &&
-        oldStatus !== "public" &&
-        oldStatus !== undefined
+        oldStatus !== undefined &&
+        oldStatus !== "public"
       ) {
         playBeep();
 
@@ -665,37 +293,19 @@ async function checkAll() {
           "Notification" in window &&
           Notification.permission === "granted"
         ) {
-          new Notification(
-            `${name} is nu PUBLIC!`,
-            {
-              body:
-                "Het model is terug in de openbare show.",
-              icon:
-                "https://chaturbate.com/favicon.ico"
-            }
-          );
+          new Notification(name + " is nu OPENBAAR!", {
+            body:"Het model is terug in de openbare show."
+          });
         }
 
-        log(`🔔 ${name} is nu PUBLIC`);
+        log("🔔 " + name + " is nu openbaar.");
       }
 
-      if (status === "error") {
-        log(`⚠️ Fout bij controleren van ${name}`);
-      } else if (status === "unknown") {
-        log(`⚠️ Status onbekend: ${name}`);
-      }
-
-      if (status === "offline" && wasOnline) {
-        log(`${name} is offline gegaan`);
-      }
-
-      // Bewaar de laatst bekende status bij tijdelijke fouten.
-      if (
-        status !== "error" &&
-        status !== "unknown"
-      ) {
-        previousStatus[name] = status;
-      } else if (oldStatus === undefined) {
+      if (status === "error" || status === "unknown") {
+        if (oldStatus === undefined) {
+          previousStatus[name] = status;
+        }
+      } else {
         previousStatus[name] = status;
       }
     }
@@ -703,20 +313,15 @@ async function checkAll() {
     render();
 
     document.getElementById("lastCheck").textContent =
-      "Laatste controle: " +
-      new Date().toLocaleTimeString();
+      "Laatste controle: " + new Date().toLocaleTimeString();
 
-    log(
-      data.complete
-        ? "Controle afgerond."
-        : "Gedeeltelijke controle afgerond; niet gevonden modellen zijn niet automatisch offline verklaard."
-    );
+    log(data.complete
+      ? "Controle afgerond."
+      : "Controle afgerond; de resultaten kunnen onvolledig zijn.");
+
   } catch (error) {
-    console.error("Controlefout:", error);
-
-    log(
-      "⚠️ Controle mislukt: " + error.message
-    );
+    console.error(error);
+    log("Controle mislukt: " + error.message);
   } finally {
     isChecking = false;
     button.disabled = false;
@@ -724,15 +329,9 @@ async function checkAll() {
   }
 }
 
-// ============================================
-// START
-// ============================================
-
 render();
 checkAll();
-
-// Iedere 60 seconden opnieuw controleren.
-setInterval(checkAll, 60 * 1000);
+setInterval(checkAll,60000);
 </script>
 
 </body>
