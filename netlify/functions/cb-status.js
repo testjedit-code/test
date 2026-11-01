@@ -1,38 +1,41 @@
 
 exports.handler = async function(event) {
-  const username = event.queryStringParameters?.username;
+  const wm = process.env.CB_WM_ID;
 
   const headers = {
     "Content-Type": "application/json",
     "Cache-Control": "no-store"
   };
 
-  if (!username || !/^[a-zA-Z0-9_]+$/.test(username)) {
+  if (!wm) {
     return {
-      statusCode: 400,
+      statusCode: 500,
       headers,
-      body: JSON.stringify({ error: "Invalid username" })
+      body: JSON.stringify({
+        error: "CB_WM_ID ontbreekt in Netlify"
+      })
     };
   }
 
   try {
-    // Test het alternatieve bio-endpoint
-    const url = `https://chaturbate.com/api/biocontext/${encodeURIComponent(username)}/`;
+    const url = new URL(
+      "https://chaturbate.com/api/public/affiliates/onlinerooms/"
+    );
+
+    url.searchParams.set("wm", wm);
+    url.searchParams.set("client_ip", "request_ip");
+    url.searchParams.set("limit", "1");
+    url.searchParams.set("offset", "0");
 
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0",
         "Accept": "application/json",
-        "Referer": "https://chaturbate.com/"
+        "User-Agent": "Mozilla/5.0"
       },
-      signal: AbortSignal.timeout(10000)
+      signal: AbortSignal.timeout(15000)
     });
 
     const body = await response.text();
-
-    console.log("Username:", username);
-    console.log("Chaturbate HTTP:", response.status);
-    console.log("Response:", body.substring(0, 500));
 
     if (!response.ok) {
       return {
@@ -40,29 +43,42 @@ exports.handler = async function(event) {
         headers,
         body: JSON.stringify({
           error: "Chaturbate HTTP " + response.status,
-          upstream_status: response.status
+          details: body.substring(0, 500)
         })
       };
     }
 
     const data = JSON.parse(body);
 
+    if (data.errors) {
+      return {
+        statusCode: 502,
+        headers,
+        body: JSON.stringify({
+          error: "Chaturbate API parameters rejected",
+          details: data.errors
+        })
+      };
+    }
+
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        room_status: data.room_status || "unknown"
+        success: true,
+        message: "Chaturbate API bereikbaar!",
+        result_count: data.results?.length ?? 0,
+        sample: data.results?.[0]?.username ?? null,
+        current_show: data.results?.[0]?.current_show ?? null
       })
     };
 
-  } catch (err) {
-    console.error("Function error:", err);
-
+  } catch (error) {
     return {
       statusCode: 502,
       headers,
       body: JSON.stringify({
-        error: err.message
+        error: error.message
       })
     };
   }
