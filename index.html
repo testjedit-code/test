@@ -1,9 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Chaturbate Online Monitor</title>
 
 <style>
@@ -31,8 +31,7 @@ h1 {
   margin-bottom: 15px;
 }
 
-button,
-select {
+button {
   background: #ff69b4;
   color: white;
   border: none;
@@ -50,29 +49,6 @@ button:hover {
 button:disabled {
   opacity: 0.6;
   cursor: wait;
-}
-
-select {
-  background: #222;
-  border: 1px solid #555;
-  max-width: 100%;
-}
-
-.filter-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 8px 0 12px;
-}
-
-.filter-row label {
-  color: #ddd;
-  font-size: 14px;
-}
-
-.filter-row select {
-  margin: 0;
 }
 
 .stats {
@@ -112,7 +88,7 @@ select {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 10px 12px;
   margin: 4px 0;
   background: #222;
@@ -123,7 +99,6 @@ select {
 .model a {
   color: inherit;
   text-decoration: none;
-  overflow-wrap: anywhere;
 }
 
 .model a:hover {
@@ -144,20 +119,37 @@ select {
 
 .status {
   font-weight: bold;
-  min-width: 90px;
+  min-width: 110px;
   text-align: right;
-  overflow-wrap: anywhere;
 }
 
-.online .status {
+.status-public {
   color: #00ff00;
 }
 
-.offline .status {
+.status-private {
+  color: #ff69b4;
+}
+
+.status-group {
+  color: #bf80ff;
+}
+
+.status-away {
+  color: #ffd54f;
+}
+
+.status-hidden {
+  color: #4db8ff;
+}
+
+.status-offline {
   color: #888;
 }
 
-.error .status {
+.status-error,
+.status-unknown,
+.status-checking {
   color: orange;
 }
 
@@ -182,21 +174,6 @@ select {
   font-size: 12px;
   margin-bottom: 12px;
 }
-
-@media (max-width: 480px) {
-  body {
-    padding: 12px;
-  }
-
-  .model {
-    padding: 9px;
-    font-size: 13px;
-  }
-
-  .status {
-    min-width: 75px;
-  }
-}
 </style>
 </head>
 
@@ -205,8 +182,8 @@ select {
 <h1>Chaturbate Monitor</h1>
 
 <p class="info">
-  Houd deze tab open. Je krijgt een geluid en notificatie
-  wanneer een model online komt.
+  Houd deze tab open. De statussen worden elke minuut gecontroleerd.
+  Je krijgt alleen een geluid wanneer een model terugkeert naar public.
 </p>
 
 <button onclick="requestPermission()">
@@ -234,29 +211,19 @@ select {
 
   <div class="stat errors">
     <strong id="errorCount">0</strong>
-    Fouten / onbekend
+    Fouten
   </div>
 </div>
 
-<div id="lastCheck">
-  Nog niet gecontroleerd
-</div>
-
-<div class="filter-row">
-  <label for="sortFilter">Sorteren:</label>
-  <select id="sortFilter" onchange="render()">
-    <option value="online">Online bovenaan (alfabetisch)</option>
-    <option value="alphabetical">Alles op alfabet</option>
-    <option value="offline">Offline bovenaan (alfabetisch)</option>
-  </select>
-</div>
-
+<div id="lastCheck">Nog niet gecontroleerd</div>
 <div id="list"></div>
 
 <h3>Activiteiten</h3>
 <div id="log"></div>
 
 <script>
+"use strict";
+
 // ============================================
 // MODELLENLIJST
 // ============================================
@@ -365,25 +332,26 @@ const MODELS = [
   "gisellee_",
   "ana_beckett",
   "babyallya",
-  "pattiwhite"
+  "patiwhite"
 ];
 
 // ============================================
-// VARIABELEN
+// INSTELLINGEN EN STATUSSEN
 // ============================================
 
 const previousStatus = {};
-
 const listEl = document.getElementById("list");
 const logEl = document.getElementById("log");
 
 let isChecking = false;
+let audioCtx;
 
 const ONLINE_STATUSES = [
   "public",
   "private",
   "group",
-  "away"
+  "away",
+  "hidden"
 ];
 
 const ERROR_STATUSES = [
@@ -392,69 +360,33 @@ const ERROR_STATUSES = [
   "checking..."
 ];
 
-// ============================================
-// SORTERING
-// Fouten en unknown blijven altijd bovenaan.
-// Binnen iedere groep wordt alfabetisch gesorteerd.
-// ============================================
+const STATUS_LABELS = {
+  public: "Openbaar",
+  private: "Privéshow",
+  group: "Groepsshow",
+  away: "Afwezig",
+  hidden: "Cam hidden",
+  offline: "Offline",
+  error: "Fout",
+  unknown: "Onbekend",
+  "checking...": "Controleren..."
+};
 
-function compareNames(a, b) {
-  return a.localeCompare(b, undefined, {
-    sensitivity: "base",
-    numeric: true
-  });
+function getStatusLabel(status) {
+  return STATUS_LABELS[status] || status;
 }
 
-function getSortGroup(status, sortMode) {
-  // Fouten, unknown en nog niet gecontroleerde modellen
-  // staan altijd bovenaan, ongeacht de gekozen filter.
-  if (ERROR_STATUSES.includes(status)) {
-    return 0;
-  }
+function getStatusClass(status) {
+  const safeStatus = String(status)
+    .toLowerCase()
+    .replace(/[^a-z-]/g, "");
 
-  const isOnline = ONLINE_STATUSES.includes(status);
-  const isOffline = status === "offline";
-
-  if (sortMode === "alphabetical") {
-    return 1;
-  }
-
-  if (sortMode === "offline") {
-    if (isOffline) return 1;
-    if (isOnline) return 2;
-    return 3;
-  }
-
-  // Standaard: online bovenaan.
-  if (isOnline) return 1;
-  if (isOffline) return 2;
-
-  return 3;
-}
-
-function getSortedModels() {
-  const sortMode = document.getElementById("sortFilter").value;
-
-  return [...MODELS].sort((a, b) => {
-    const statusA = previousStatus[a] || "checking...";
-    const statusB = previousStatus[b] || "checking...";
-
-    const groupA = getSortGroup(statusA, sortMode);
-    const groupB = getSortGroup(statusB, sortMode);
-
-    if (groupA !== groupB) {
-      return groupA - groupB;
-    }
-
-    return compareNames(a, b);
-  });
+  return `status-${safeStatus || "unknown"}`;
 }
 
 // ============================================
 // GELUID
 // ============================================
-
-let audioCtx;
 
 function playBeep() {
   try {
@@ -482,7 +414,7 @@ function playBeep() {
     osc.start();
     osc.stop(audioCtx.currentTime + 0.8);
   } catch (error) {
-    console.error("Audio error:", error);
+    console.error("Audiofout:", error);
   }
 }
 
@@ -491,7 +423,7 @@ function testSound() {
 }
 
 // ============================================
-// NOTIFICATIES
+// BROWSERNOTIFICATIES
 // ============================================
 
 async function requestPermission() {
@@ -500,17 +432,34 @@ async function requestPermission() {
     return;
   }
 
-  const permission = await Notification.requestPermission();
+  try {
+    const permission = await Notification.requestPermission();
 
-  if (permission === "granted") {
-    alert("Notificaties zijn ingeschakeld!");
-  } else {
-    alert("Notificaties zijn niet toegestaan.");
+    if (permission === "granted") {
+      alert("Notificaties zijn ingeschakeld!");
+    } else {
+      alert("Notificaties zijn niet toegestaan.");
+    }
+  } catch (error) {
+    console.error("Notificatiefout:", error);
+    alert("De notificatie-instelling kon niet worden aangepast.");
+  }
+}
+
+function notifyPublic(name) {
+  if (
+    "Notification" in window &&
+    Notification.permission === "granted"
+  ) {
+    new Notification(`${name} is nu PUBLIC!`, {
+      body: "Het model is terug in de openbare show.",
+      icon: "https://chaturbate.com/favicon.ico"
+    });
   }
 }
 
 // ============================================
-// LOG
+// ACTIVITEITENLOG
 // ============================================
 
 function log(message) {
@@ -526,7 +475,7 @@ function log(message) {
 }
 
 // ============================================
-// STATUS WEERGAVE
+// STATUS WEERGEVEN
 // ============================================
 
 function render() {
@@ -534,9 +483,7 @@ function render() {
   let offline = 0;
   let errors = 0;
 
-  const sortedModels = getSortedModels();
-
-  listEl.innerHTML = sortedModels.map(name => {
+  listEl.innerHTML = MODELS.map(name => {
     const status = previousStatus[name] || "checking...";
     const isOnline = ONLINE_STATUSES.includes(status);
     const isError = ERROR_STATUSES.includes(status);
@@ -549,23 +496,23 @@ function render() {
       offline++;
     }
 
-    const cssClass = isOnline
+    const rowClass = isOnline
       ? "online"
       : isError
         ? "error"
         : "offline";
 
-    const modelUrl =
-      "https://chaturbate.com/" + encodeURIComponent(name) + "/";
+    const label = getStatusLabel(status);
+    const statusClass = getStatusClass(status);
 
     return `
-      <div class="model ${cssClass}">
+      <div class="model ${rowClass}">
         <span>
-          <a href="${modelUrl}"
+          <a href="https://chaturbate.com/${encodeURIComponent(name)}/"
              target="_blank"
              rel="noopener noreferrer">${name}</a>
         </span>
-        <span class="status">${status}</span>
+        <span class="status ${statusClass}">${label}</span>
       </div>
     `;
   }).join("");
@@ -573,39 +520,6 @@ function render() {
   document.getElementById("onlineCount").textContent = online;
   document.getElementById("offlineCount").textContent = offline;
   document.getElementById("errorCount").textContent = errors;
-}
-
-// ============================================
-// ÉÉN MODEL CONTROLEREN
-// ============================================
-
-async function checkOne(username) {
-  try {
-    const response = await fetch(
-      `/.netlify/functions/cb-status?username=${encodeURIComponent(username)}`,
-      { cache: "no-store" }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok || data.error) {
-      console.error(username, data.error || "Onbekende API-fout");
-      return "error";
-    }
-
-    const status =
-      data.room_status ||
-      data.statuses?.[username.toLowerCase()];
-
-    if (ONLINE_STATUSES.includes(status)) return status;
-    if (status === "offline") return "offline";
-    if (status === "error") return "error";
-
-    return "unknown";
-  } catch (error) {
-    console.error("Controlefout:", username, error);
-    return "error";
-  }
 }
 
 // ============================================
@@ -621,8 +535,6 @@ async function checkAll() {
   button.disabled = true;
   button.textContent = "Bezig met controleren...";
 
-  log("Controle gestart...");
-
   try {
     const response = await fetch(
       "/.netlify/functions/cb-status?usernames=" +
@@ -637,27 +549,20 @@ async function checkAll() {
     }
 
     for (const name of MODELS) {
-      const status = data.statuses[name.toLowerCase()] || "unknown";
+      const key = name.toLowerCase();
+      const status = data.statuses[key] || "unknown";
       const oldStatus = previousStatus[name];
 
-      const wasOnline = ONLINE_STATUSES.includes(oldStatus);
-      const isOnline = ONLINE_STATUSES.includes(status);
-
-      // Melding bij nieuw online gaan, behalve bij eerste controle.
-      if (isOnline && !wasOnline && oldStatus !== undefined) {
+      // Alleen geluid en melding bij een overgang naar public.
+      // De eerste controle geeft dus geen alarm.
+      if (
+        status === "public" &&
+        oldStatus !== "public" &&
+        oldStatus !== undefined
+      ) {
         playBeep();
-
-        if (
-          "Notification" in window &&
-          Notification.permission === "granted"
-        ) {
-          new Notification(`${name} is ONLINE!`, {
-            body: `Status: ${status}`,
-            icon: "https://chaturbate.com/favicon.ico"
-          });
-        }
-
-        log(`🔔 ${name} is nu online (${status})`);
+        notifyPublic(name);
+        log(`🔔 ${name} is nu PUBLIC`);
       }
 
       if (status === "error") {
@@ -666,12 +571,15 @@ async function checkAll() {
         log(`⚠️ Status onbekend: ${name}`);
       }
 
-      if (status === "offline" && wasOnline) {
+      if (
+        status === "offline" &&
+        ONLINE_STATUSES.includes(oldStatus)
+      ) {
         log(`${name} is offline gegaan`);
       }
 
-      // Bewaar de laatst bekende status bij tijdelijke fouten.
-      if (status !== "error" && status !== "unknown") {
+      // Tijdelijke fouten overschrijven geen eerder bekende status.
+      if (!ERROR_STATUSES.includes(status)) {
         previousStatus[name] = status;
       } else if (oldStatus === undefined) {
         previousStatus[name] = status;
@@ -686,7 +594,7 @@ async function checkAll() {
     log(
       data.complete
         ? "Controle afgerond."
-        : "Gedeeltelijke controle afgerond; ontbrekende modellen zijn niet als offline gemarkeerd."
+        : "Gedeeltelijke controle afgerond."
     );
   } catch (error) {
     console.error("Controlefout:", error);
@@ -699,14 +607,14 @@ async function checkAll() {
 }
 
 // ============================================
-// START
+// START EN AUTOMATISCHE VERNIEUWING
 // ============================================
 
 render();
 checkAll();
 
-// Iedere 90 seconden opnieuw controleren.
-setInterval(checkAll, 90 * 1000);
+// Controleer iedere 60 seconden opnieuw.
+setInterval(checkAll, 60 * 1000);
 </script>
 
 </body>
