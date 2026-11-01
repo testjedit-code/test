@@ -43,13 +43,11 @@ exports.handler = async function (event) {
     );
 
     const found = new Set();
-
     const baseUrl =
       "https://chaturbate.com/api/public/affiliates/onlinerooms/";
 
     const pageSize = 500;
     const maxPages = 20;
-
     let complete = false;
 
     for (let page = 0; page < maxPages; page++) {
@@ -121,21 +119,17 @@ exports.handler = async function (event) {
         }
       }
 
-      // Een kortere pagina betekent dat de feed volledig is doorlopen.
       if (data.results.length < pageSize) {
         complete = true;
         break;
       }
 
-      // Alle gevraagde modellen zijn gevonden.
       if (found.size === requested.length) {
         complete = true;
         break;
       }
     }
 
-    // Alleen als de feed volledig is doorlopen, mogen niet-gevonden
-    // namen als offline worden weergegeven.
     if (complete) {
       for (const name of requested) {
         if (!found.has(name)) {
