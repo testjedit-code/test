@@ -1,4 +1,3 @@
-
 exports.handler = async function (event) {
   const wm = process.env.CB_WM_ID;
 
@@ -39,7 +38,7 @@ exports.handler = async function (event) {
     uniqueRequested.length > 150
   ) {
     return reply(400, {
-      error: "Geef 1 tot 150 gebruikersnamen op via username of usernames."
+      error: "Geef 1 tot 150 gebruikersnamen op."
     });
   }
 
@@ -49,13 +48,11 @@ exports.handler = async function (event) {
     );
 
     const found = new Set();
-
     const baseUrl =
       "https://chaturbate.com/api/public/affiliates/onlinerooms/";
 
     const pageSize = 500;
     const maxPages = 20;
-
     let complete = false;
 
     for (let page = 0; page < maxPages; page++) {
@@ -103,12 +100,14 @@ exports.handler = async function (event) {
 
       if (!Array.isArray(data.results)) {
         return reply(502, {
-          error: "Ongeldig antwoord: results ontbreekt in Chaturbate-response."
+          error: "Ongeldig antwoord: results ontbreekt."
         });
       }
 
       for (const room of data.results) {
-        const name = String(room.username || "").toLowerCase();
+        const name = String(
+          room.username || ""
+        ).toLowerCase();
 
         if (!uniqueRequested.includes(name)) {
           continue;
@@ -121,30 +120,29 @@ exports.handler = async function (event) {
         ).toLowerCase();
 
         if (
-          ["public", "private", "group", "away", "hidden"].includes(show)
+          ["public", "private", "group", "away"].includes(show)
         ) {
           statuses[name] = show;
-        } else if (show === "cam_hidden") {
+        } else if (
+          ["hidden", "cam_hidden"].includes(show)
+        ) {
           statuses[name] = "hidden";
         } else {
           statuses[name] = "unknown";
         }
       }
 
-      // Een kortere pagina betekent dat de feed volledig is doorlopen.
       if (data.results.length < pageSize) {
         complete = true;
         break;
       }
 
-      // Alle gevraagde modellen zijn gevonden.
       if (found.size === uniqueRequested.length) {
         complete = true;
         break;
       }
     }
 
-    // Alleen na een volledige controle worden niet gevonden modellen offline.
     if (complete) {
       for (const name of uniqueRequested) {
         if (!found.has(name)) {
@@ -162,7 +160,10 @@ exports.handler = async function (event) {
     return reply(502, {
       error: error.name === "TimeoutError"
         ? "Chaturbate API reageert te langzaam."
-        : (error.message || "Onbekende fout bij de Chaturbate API.")
+        : (
+            error.message ||
+            "Onbekende fout bij de Chaturbate API."
+          )
     });
   }
 };
